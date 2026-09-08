@@ -1,0 +1,26 @@
+package com.recovery.ReceivablesGuard.event;
+
+public enum AgentEventType {
+
+    RUN_STARTED,
+
+    INVOICE_STARTED,
+
+    OBSERVATION_CREATED,
+
+    DIAGNOSIS_COMPLETED,
+
+    DECISION_CALCULATED,
+
+    POLICY_BLOCKED,
+
+    DECISION_AUTHORIZED,
+
+    EXECUTION_COMPLETED,
+
+    OUTCOME_RECEIVED,
+
+    INVOICE_COMPLETED,
+
+    RUN_COMPLETED
+}
