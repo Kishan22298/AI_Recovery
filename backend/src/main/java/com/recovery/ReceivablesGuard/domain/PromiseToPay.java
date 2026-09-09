@@ -113,6 +113,9 @@ public class PromiseToPay {
     public Instant getBrokenAt() {
         return brokenAt;
     }
+public Instant getCreatedAt() {
+    return createdAt;
+}
 
     public void setStatus(PromiseStatus status) {
         this.status = status;

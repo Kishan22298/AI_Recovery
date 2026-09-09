@@ -15,12 +15,15 @@ export interface InvoiceResponse {
   externalRef: string
   customerId: number | null
   customerReference: string | null
+  customerName: string | null
+  customerEmail: string | null
+  customerPhone: string | null
   totalAmount: number
   outstandingAmount: number
   currency: string
   issueDate: string
   dueDate: string
-  status: string | null
+  status: string
   description: string | null
 }
 
@@ -89,4 +92,31 @@ export interface AgentEvent {
   eventType: AgentEventType
   timestamp: string
   payload: Record<string, unknown>
+}
+
+export interface PaymentResponse {
+  id: number
+  amount: number
+  currency: string
+  receivedAt: string
+  status: string
+  reference: string | null
+}
+
+export interface InterventionOutcomeResponse {
+  id: number
+  agentRoundId: number | null
+  outcomeType: string
+  recoveredAmount: number
+  notes: string | null
+  occurredAt: string
+}
+
+export interface PromiseToPayResponse {
+  id: number
+  promisedAmount: number
+  promisedDate: string
+  status: string
+  brokenAt: string | null
+  createdAt: string
 }

@@ -9,7 +9,10 @@ public record InvoiceResponse(
         Long id,
         String externalRef,
         Long customerId,
-        String customerReference,
+String customerReference,
+String customerName,
+String customerEmail,
+String customerPhone,
         BigDecimal totalAmount,
         BigDecimal outstandingAmount,
         String currency,
@@ -34,8 +37,17 @@ public record InvoiceResponse(
                         ? invoice.getCustomer().getId()
                         : null,
                 invoice.getCustomer() != null
-                        ? invoice.getCustomer().getExternalRef()
-                        : null,
+        ? invoice.getCustomer().getExternalRef()
+        : null,
+invoice.getCustomer() != null
+        ? invoice.getCustomer().getName()
+        : null,
+invoice.getCustomer() != null
+        ? invoice.getCustomer().getEmail()
+        : null,
+invoice.getCustomer() != null
+        ? invoice.getCustomer().getPhone()
+        : null,
                 invoice.getTotalAmount(),
                 invoice.getOutstandingAmount(),
                 invoice.getCurrency(),

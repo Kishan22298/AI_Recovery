@@ -1018,13 +1018,16 @@ interventionOutcomeRepository.save(
                         stateResult.newOutstandingAmount()
                 );
 
-                invoice.setStatus(
-                        com.recovery.ReceivablesGuard.domain
-                                .InvoiceStatus
-                                .valueOf(
-                                        stateResult.newInvoiceStatus()
-                                )
-                );
+               invoice.setStatus(
+        switch (stateResult.newInvoiceStatus()) {
+            case "OUTSTANDING" ->
+                    com.recovery.ReceivablesGuard.domain.InvoiceStatus.OPEN;
+
+            default ->
+                    com.recovery.ReceivablesGuard.domain.InvoiceStatus
+                            .valueOf(stateResult.newInvoiceStatus());
+        }
+);
 
                 invoiceRepository.save(invoice);
             }

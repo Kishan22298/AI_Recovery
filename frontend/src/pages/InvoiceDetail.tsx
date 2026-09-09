@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import { getInvoice } from '../api/invoices'
-import { getInvoiceAgentRuns } from '../api/agentRuns'
+import {
+  getInvoice,
+  getInvoiceAgentRuns,
+  getInvoicePayments,
+  getInvoiceInterventions,
+  getInvoicePromises,
+} from '../api/invoices'
 import type {
   AgentRunResponse,
   InvoiceResponse,
+  PaymentResponse,
+  InterventionOutcomeResponse,
+  PromiseToPayResponse,
 } from '../types/api'
 import { AuditTimeline } from '../components/AuditTimeline'
 
@@ -20,6 +28,10 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount)
 }
 
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('en-IN')
+}
+
 export function InvoiceDetail({
   invoiceId,
   onBack,
@@ -27,14 +39,22 @@ export function InvoiceDetail({
   const [invoice, setInvoice] =
     useState<InvoiceResponse | null>(null)
 
-  const [loading, setLoading] =
-    useState(true)
+  const [agentRuns, setAgentRuns] =
+    useState<AgentRunResponse[]>([])
+
+  const [payments, setPayments] =
+    useState<PaymentResponse[]>([])
+
+  const [interventions, setInterventions] =
+    useState<InterventionOutcomeResponse[]>([])
+
+  const [promises, setPromises] =
+    useState<PromiseToPayResponse[]>([])
+
+  const [loading, setLoading] = useState(true)
 
   const [error, setError] =
     useState<string | null>(null)
-
-  const [agentRuns, setAgentRuns] =
-  useState<AgentRunResponse[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -44,16 +64,27 @@ export function InvoiceDetail({
         setLoading(true)
         setError(null)
 
-        const [invoiceData, agentRunsData] =
-  await Promise.all([
-    getInvoice(invoiceId),
-    getInvoiceAgentRuns(invoiceId),
-  ])
+        const [
+          invoiceData,
+          agentRunsData,
+          paymentsData,
+          interventionsData,
+          promisesData,
+        ] = await Promise.all([
+          getInvoice(invoiceId),
+          getInvoiceAgentRuns(invoiceId),
+          getInvoicePayments(invoiceId),
+          getInvoiceInterventions(invoiceId),
+          getInvoicePromises(invoiceId),
+        ])
 
-if (!cancelled) {
-  setInvoice(invoiceData)
-  setAgentRuns(agentRunsData)
-}
+        if (!cancelled) {
+          setInvoice(invoiceData)
+          setAgentRuns(agentRunsData)
+          setPayments(paymentsData)
+          setInterventions(interventionsData)
+          setPromises(promisesData)
+        }
       } catch (requestError) {
         if (!cancelled) {
           setError(
@@ -121,17 +152,17 @@ if (!cancelled) {
       </section>
     )
   }
-const latestAgentRun =
-  agentRuns.length > 0
-    ? agentRuns[agentRuns.length - 1]
-    : null
+
+  const latestAgentRun =
+    agentRuns.length > 0
+      ? agentRuns[agentRuns.length - 1]
+      : null
+
   return (
     <section className="invoice-detail-page">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">
-            INVOICE DETAIL
-          </p>
+          <p className="eyebrow">INVOICE DETAIL</p>
 
           <h1>{invoice.externalRef}</h1>
 
@@ -157,7 +188,7 @@ const latestAgentRun =
               <h2>Invoice Information</h2>
 
               <p>
-                Core invoice and customer information.
+                Core invoice and recovery information.
               </p>
             </div>
           </div>
@@ -165,15 +196,11 @@ const latestAgentRun =
           <div className="detail-grid">
             <div>
               <span>Invoice Reference</span>
-
-              <strong>
-                {invoice.externalRef}
-              </strong>
+              <strong>{invoice.externalRef}</strong>
             </div>
 
             <div>
               <span>Customer Reference</span>
-
               <strong>
                 {invoice.customerReference ?? '—'}
               </strong>
@@ -181,7 +208,6 @@ const latestAgentRun =
 
             <div>
               <span>Status</span>
-
               <strong>
                 {invoice.status ?? '—'}
               </strong>
@@ -189,25 +215,58 @@ const latestAgentRun =
 
             <div>
               <span>Currency</span>
-
-              <strong>
-                {invoice.currency}
-              </strong>
+              <strong>{invoice.currency}</strong>
             </div>
 
             <div>
               <span>Issue Date</span>
-
-              <strong>
-                {invoice.issueDate}
-              </strong>
+              <strong>{invoice.issueDate}</strong>
             </div>
 
             <div>
               <span>Due Date</span>
+              <strong>{invoice.dueDate}</strong>
+            </div>
+          </div>
+        </section>
 
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Customer Information</h2>
+
+              <p>
+                Customer contact and account details.
+              </p>
+            </div>
+          </div>
+
+          <div className="detail-grid">
+            <div>
+              <span>Customer</span>
               <strong>
-                {invoice.dueDate}
+                {invoice.customerName ?? '—'}
+              </strong>
+            </div>
+
+            <div>
+              <span>Customer ID</span>
+              <strong>
+                {invoice.customerId ?? '—'}
+              </strong>
+            </div>
+
+            <div>
+              <span>Email</span>
+              <strong>
+                {invoice.customerEmail ?? '—'}
+              </strong>
+            </div>
+
+            <div>
+              <span>Phone</span>
+              <strong>
+                {invoice.customerPhone ?? '—'}
               </strong>
             </div>
           </div>
@@ -264,9 +323,196 @@ const latestAgentRun =
         )}
       </div>
 
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Payment History</h2>
+
+            <p>
+              Payments recorded against this invoice.
+            </p>
+          </div>
+        </div>
+
+        {payments.length === 0 ? (
+          <div className="state-message">
+            No payments recorded for this invoice.
+          </div>
+        ) : (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Reference</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>
+                      {formatDateTime(
+                        payment.receivedAt,
+                      )}
+                    </td>
+
+                    <td>
+                      {payment.reference ?? '—'}
+                    </td>
+
+                    <td>
+                      {formatCurrency(
+                        payment.amount,
+                        payment.currency,
+                      )}
+                    </td>
+
+                    <td>{payment.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Intervention History</h2>
+
+            <p>
+              Recovery interventions and their outcomes.
+            </p>
+          </div>
+        </div>
+
+        {interventions.length === 0 ? (
+          <div className="state-message">
+            No intervention outcomes recorded.
+          </div>
+        ) : (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Occurred</th>
+                  <th>Round</th>
+                  <th>Outcome</th>
+                  <th>Recovered</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {interventions.map((intervention) => (
+                  <tr key={intervention.id}>
+                    <td>
+                      {formatDateTime(
+                        intervention.occurredAt,
+                      )}
+                    </td>
+
+                    <td>
+                      {intervention.agentRoundId ?? '—'}
+                    </td>
+
+                    <td>
+                      {intervention.outcomeType}
+                    </td>
+
+                    <td>
+                      {formatCurrency(
+                        intervention.recoveredAmount,
+                        invoice.currency,
+                      )}
+                    </td>
+
+                    <td>
+                      {intervention.notes ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Promise to Pay</h2>
+
+            <p>
+              Customer commitments associated with the
+              invoice.
+            </p>
+          </div>
+        </div>
+
+        {promises.length === 0 ? (
+          <div className="state-message">
+            No promises to pay recorded.
+          </div>
+        ) : (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Promised Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Broken At</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {promises.map((promise) => (
+                  <tr key={promise.id}>
+                    <td>
+                      {promise.promisedDate}
+                    </td>
+
+                    <td>
+                      {formatCurrency(
+                        promise.promisedAmount,
+                        invoice.currency,
+                      )}
+                    </td>
+
+                    <td>{promise.status}</td>
+
+                    <td>
+                      {promise.brokenAt
+                        ? formatDateTime(
+                            promise.brokenAt,
+                          )
+                        : '—'}
+                    </td>
+
+                    <td>
+                      {formatDateTime(
+                        promise.createdAt,
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {latestAgentRun && (
-  <AuditTimeline agentRunId={latestAgentRun.id} />
-)}
+        <AuditTimeline
+          agentRunId={latestAgentRun.id}
+        />
+      )}
     </section>
   )
 }
