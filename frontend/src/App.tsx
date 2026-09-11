@@ -3,6 +3,7 @@ import { getInvoices } from './api/invoices'
 import { getMetrics } from './api/metrics'
 import { InvoiceDetail } from './pages/InvoiceDetail'
 import { LiveAgentRun } from './components/LiveAgentRun'
+import { EscalationQueue } from './pages/EscalationQueue'
 import type {
   InvoiceResponse,
   MetricsResponse,
@@ -54,8 +55,8 @@ function App() {
     useState<string | null>(null)
 
   const [page, setPage] = useState<
-    'dashboard' | 'live-run' | 'invoice-detail'
-  >('dashboard')
+  'dashboard' | 'live-run' | 'invoice-detail' | 'escalations'
+>('dashboard')
 
   const [selectedInvoiceId, setSelectedInvoiceId] =
     useState<number | null>(null)
@@ -144,6 +145,20 @@ function App() {
             }
           >
             Live Agent Run
+          </button>
+
+          <button
+            type="button"
+            className={
+              page === 'escalations'
+                ? 'nav-active'
+                : ''
+            }
+            onClick={() =>
+              setPage('escalations')
+            }
+          >
+            Escalation
           </button>
         </nav>
 
@@ -375,6 +390,10 @@ function App() {
               }
             />
           )}
+
+        {page === 'escalations' && (
+          <EscalationQueue />
+        )}
       </main>
     </div>
   )
